@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -17,7 +18,7 @@ namespace Factorizer.Gui
 		string _prefix = string.Empty;
 		readonly Factoring _factoring = new Factoring();
 
-		static string Filepath { get { return string.Format("{0}\\cached-primes.bin", Environment.CurrentDirectory); } }
+		static string Filepath { get { return string.Format("{0}\\..\\..\\cached-primes.bin", Environment.CurrentDirectory); } }
 
 		public Form1()
 		{
@@ -50,7 +51,7 @@ namespace Factorizer.Gui
 								};
 
 			var index = Environment.TickCount % initialValues.Length;
-			Value.Text = initialValues[index].ToString();
+			Value.Text = initialValues[index].ToString(CultureInfo.InvariantCulture);
 		}
 
 		private void WorkerOnDoWork(object sender, DoWorkEventArgs args)
@@ -96,8 +97,8 @@ namespace Factorizer.Gui
 			_stopwatch.Stop();
 
 			CalculationTime.Text = _stopwatch.Elapsed.ToString();
-			NumberOfCachedPrimes.Text = Factoring.CachedPrimes.Count.ToString();
-			LargestCachedPrime.Text = Factoring.CachedPrimes.Last().ToString();
+			NumberOfCachedPrimes.Text = Factoring.CachedPrimes.Count.ToString(CultureInfo.InvariantCulture);
+			LargestCachedPrime.Text = Factoring.CachedPrimes.Last().ToString(CultureInfo.InvariantCulture);
 		}
 
 		private void Factorize_Click(object sender, EventArgs e)
@@ -130,24 +131,33 @@ namespace Factorizer.Gui
 
 		private void SaveCachedPrimes()
 		{
-			if (File.Exists(Filepath))
-				File.Delete(Filepath);
+			var tempFile = Filepath + ".temp";
+			if (File.Exists(tempFile))
+				File.Delete(tempFile);
 
-			using (var file = File.OpenWrite(Filepath))
+			using (var file = File.OpenWrite(tempFile))
 			{
 				Serialize(file, Factoring.CachedPrimes);
 			}
+
+			if (File.Exists(Filepath))
+			{
+				var backupFileName = Filepath + ".old";
+
+				File.Replace(tempFile, Filepath, backupFileName);
+			}
+			else
+				File.Move(tempFile, Filepath);
 		}
 
 		private void LoadCachedPrimes()
 		{
-			if (File.Exists(Filepath))
-			{
-				using (var file = File.OpenRead(Filepath))
-				{
-					Factoring.CachedPrimes = Deserialize<SortedSet<ulong>>(file);
-				}
+			if (!File.Exists(Filepath))
+				return;
 
+			using (var file = File.OpenRead(Filepath))
+			{
+				Factoring.CachedPrimes = Deserialize<SortedSet<ulong>>(file);
 			}
 		}
 
