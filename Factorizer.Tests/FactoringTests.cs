@@ -12,7 +12,7 @@ namespace Factorizer.Tests
 			var expectedPrimes = new ulong[] { 2, 3, 5, 7, 11, 13, 17 };
 
 			var primes = Factoring
-							.GetPrimes()
+							.GetSlowPrimes()
 							.Take(expectedPrimes.Length)
 							.ToArray();
 

@@ -18,7 +18,7 @@ namespace Factorizer
 				yield break;
 			}
 
-			foreach (var prime in GetPrimes())
+			foreach (var prime in GetSlowPrimes())
 			{
 				if (CancellationPending)
 				{
@@ -37,15 +37,24 @@ namespace Factorizer
 			}
 		}
 
-		public static IEnumerable<ulong> GetPrimes(ulong start = 2)
+		public static IEnumerable<ulong> GetSlowPrimes(ulong start = 2)
+		{
+			return GetPrimes(IsPrimeSlow, start);
+		}
+
+		public static IEnumerable<ulong> GetFastPrimes(ulong start = 2)
+		{
+			return GetPrimes(IsPrimeFast, start);
+		}
+
+		private static IEnumerable<ulong> GetPrimes(Func<ulong, bool> isPrime, ulong start = 2)
 		{
 			if (start < 2)
 				throw new ArgumentOutOfRangeException("start", "A prime number can't be less than '2'");
 
 			for (var candidate = start; candidate < ulong.MaxValue; candidate++)
 			{
-				// if (!IsPrimeFast(candidate))
-				if (!IsPrimeSlow(candidate))
+				if (!isPrime(candidate))
 					continue;
 
 				if (!CachedPrimes.Contains(candidate))
@@ -80,8 +89,11 @@ namespace Factorizer
 			// a^(p-1) = 1 (mod p)
 			const ulong a = 2;
 			var p = candidate;
-			var result = (ulong)Math.Pow(a, p - 1);
-			var reminder = result % p;
+			var result = Math.Pow(a, p - 1);
+			if(double.IsPositiveInfinity(result))
+				throw new ArgumentOutOfRangeException("candidate", "IsPrimeFast can't be used for inputs as large as " + candidate);
+
+			var reminder = (ulong)Math.Round(result % p);
 
 			return reminder == 1;
 		}
